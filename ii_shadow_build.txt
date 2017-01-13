@@ -1,0 +1,190 @@
+NAME
+
+   ii_shadow_build
+   
+   Prepares the IBIS/ISGRI data for scientific analysis.
+
+USAGE
+
+   ii_shadow_build 
+   or any other way permited by PIL
+
+DESCRIPTION
+
+   This program prepares IBIS/ISGRI data for scientific analysis. 
+   Its main function is to split the data into energy bins and 
+   time bins. 
+
+   Be carefull, we select events with Corrected Rise Time given by 
+   the parameters isgri_min_rise and isgri_max_rise. By default, 
+   input values are respectively 16 and 116 corresponding to raw 
+   rise time selection 7-80.
+
+   The conversion of Low Threshold expressed in step into Low threshold 
+   in kev takes into account the drift of energy with the 
+   parameter "protonDOL".
+
+   Any number of energy bins and time bins may be stipulated. 
+   
+   However, the user should keep in mind that a resolution lower 
+   than that of the IBIS instrument is incoherent and will not 
+   produce meaningful results.
+   
+   The number of images and boundary energies (keV) for each image
+   are read from parameter file.
+
+   The efficiency is calculated in the following manner :
+
+   At the start of the revolution, ie the earth orbit, the ISGRI pixel 
+   status is reset to reflect the past configurations. This is achieved 
+   through uploading a context.
+
+   Then, for every Science Window, we must know whether ISGRI pixel have
+   been set On or Off by NPHS system. This is achieved by reading 
+   HouseKeeping3 data.
+
+   We also have to determine Good Time Intervals from ISGRI, from the
+   modules and also from the user requirements. This induces a selection
+   on events and a factor of efficiency:
+
+       Eff= WGTI, and for pixels desactivated:
+       Eff= 0.
+
+   The deadtime must be included in the efficiency since 
+   it effectively lowers the exposure time. Thus the above efficiency 
+   must be weighted by the fractional deadtime, WDT. Thus, for pixels
+   activated during the orbit:
+
+       Eff= WGTI*(1-WDT), and for pixels desactivated:
+       Eff= 0.
+
+   Besides this correction, the efficiency for the lower energy bins might 
+   depend on the energy due to the pixel lower threshold energy operation 
+   limit. Then if WLT is the required correction,
+
+       Eff= WGTI*(1-WDT)*WLT, and for pixels desactivated:
+       Eff= 0.
+
+   Finally, we also apply two different techniques of Noisy Pixels Exclusion:
+   one is time-based on events, the other is spectral-based. The purpose is to
+   set efficiency to ZERO for noisy pixels.
+
+   It is this value that is given in the shadowgram efficiency maps.
+   	
+PARAMETERS
+
+   Parameter       Type    Description           Comments
+   Name
+   ---------------+-------+---------------------+-----------------------------
+   details          string  Do Debugging if equal  Default NO 
+                            to YES, otherwise no.
+   inSWGGRP         string  DOL of input Group
+   inRawEvts        string  DOL of the Raw events 
+                            RAW DS
+   inPrwEvts        string  DOL of the events 
+                            Packet Raw data DS
+   inSrwEvts        string  DOL of the events 
+                            Secondary Packet Raw 
+                            data DS
+   inPrpEvts        string  DOL of the events 
+                            PRePared DS
+   inCorEvts        string  DOL of the events 
+                            CORected DS
+   inDead           string  DOL of the deadtime 
+                            DS
+   inGTI            string  DOL of the Good Time 
+                            Interval DS
+   inNoisList       string  DOL of the Noisy Pixel 
+                            List DS
+   idxLowThre       string  DOL of the Low 
+                            Threshold table
+   idxNoisy         string  DOL of the index of HK3
+			    noisy maps
+   outSWGGRP        string  DOL of output Group
+   outRawShadow     string  DOL of the index of 
+                            raw shadowgram
+   outEffShadow     string  DOL of the index of 
+                            efficiency shadowgram
+   gti_name         string  Name of the GTI to use 
+                            in the executable
+   isgri_e_num      int     Number of energy 
+                            intervals
+   isgri_e_min      string  List of lower energy 
+                            boundaries (keV)
+   isgri_e_max      string  List of upper energy 
+			    boundaries (keV)	
+   isgri_min_rise   int     Minimum Corrected rise time, default value 16
+   isgri_max_rise   int     Maximum Corrected rise time, default value 116
+   isgri_row_filter string  User-defined row filter on ISGRI events              
+   isgri_t_len      string  Length of time 
+                            interval (s)
+   NoisyDetFlag     int     Flag to plug Spectral
+                            Noisy Pixels Detection
+   outputLevel	    string  Output level of the DS
+   protonDOL	    string  DOL of proton doses cumulated
+
+EXAMPLES
+
+   See USAGE
+
+COMMENTS
+
+   On error the following internal error numbers are returned : 
+
+   Constant Name                          Value    Description  
+   -------------------------------------+--------+-----------------------------
+   ERR_ISGR_OSM_UNUSED                   -121201    Unused error
+   ERR_ISGR_OSM_TABLE_EMPTY              -121202    Data table is empty
+   ERR_ISGR_OSM_NROWS_NVALUES            -121203    Number of rows != number 
+                                                    of values
+   ERR_ISGR_OSM_DEREFERENCE              -121204    Dereferencing error
+   ERR_ISGR_OSM_FILE_NOTFOUND            -121205    Data i/o file not found => 
+                                                    continue
+   ERR_ISGR_OSM_FILE_NECESSARY_NOTFOUND  -121206    Data necessary i/o file 
+                                                    not found => abort
+   ERR_ISGR_OSM_OUTPUT_FILE_CREATION     -121207    Output file creation error 
+                                                    => abort
+   ERR_ISGR_OSM_OUTPUT_INDEX_CREATION    -121208    Index file creation error 
+                                                    => abort
+   ERR_ISGR_OSM_MEMORY_ALLOC             -121209    Memmory allocation error
+   ERR_ISGR_OSM_SHD_INDX                 -121210    Shadowgram index does 
+                                                    not exist
+   ERR_ISGR_OSM_EFFI_SHD_INDX            -121211    Shadowgram efficiency 
+                                                    index does not exist
+   ERR_ISGR_OSM_DSP_INDX                 -121212    Spectral index  
+                                                    does not exist
+   ERR_ISGR_OSM_LCR_INDX                 -121213    Light curve index  
+                                                    does not exist
+   ERR_ISGR_OSM_WRITE_STATITICS          -121214    impossible to write
+                                                    statistics
+   ERR_ISGR_OSM_WRITE_SHADOWGRAM         -121215    impossible to write image
+   ERR_ISGR_OSM_WRITE_EFFICIENCY_SHD     -121216    impossible to write image
+                                                    efficiency
+   ERR_ISGR_OSM_WRITE_SPECTRA            -121217    impossible to write spectra
+   ERR_ISGR_OSM_WRITE_EFFICIENCY_DSP     -121218    impossible to write spectra
+                                                    efficiency
+   ERR_ISGR_OSM_WRITE_LIGHTCURVES        -121219    impossible to write 
+                                                    lightcurve
+   ERR_ISGR_OSM_WRITE_EFFICIENCY_LCR     -121220    impossible to write 
+                                                    lightcurve efficiency
+   ERR_ISGR_OSM_DATA_INCONSISTENCY       -121221    some data inconsistency
+
+   Error numbers are those reserved for ibis_osm_isgr.
+
+   References:  ISDC/SciAnalysis-IBIS-ICD  v.2.2 (April 2001)
+
+BUGS
+
+   Not yet.
+
+AUTHOR
+
+   Severin Chazalmartin, SAp-CEA/Saclay
+   chazalse@discovery.saclay.cea.fr
+   Christophe Couvreur, SAp-CEA/Saclay
+   ccouvreu@cea.fr
+SEE ALSO
+
+   ibis_osm_isgr
+
+	
