@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
   char            
     UserRowFilter[DAL_FILE_NAME_STRING]= "", // User-defined ROW filter on ISGRI events
     InGTIName[DAL_FILE_NAME_STRING]= "",
+    InEFFCDOL[DAL_FILE_NAME_STRING]= "",
     outputLevel[PIL_LINESIZE]= "";                               
   dal_byte        
     MinRiseTime= 0,
@@ -82,9 +83,17 @@ int main(int argc, char *argv[])
   ////////////////////////////////////////////////////////////////////////////////////////////////////
 
   RILstatus= RILlogMessage(NULL,Log_1,"---------- Retrieve program PARAMETERS ----------");
-  status= GetPars(&NewGRP, &idxREVcontext, &idxHK3maps, InGTIName, &EnergyBounds, &NumImaBin, &TimeLen, 
+  status= GetPars(&NewGRP, &idxREVcontext, &idxHK3maps, InGTIName, InEFFCDOL, &EnergyBounds, &NumImaBin, &TimeLen, 
 		  UserRowFilter, &MinRiseTime, &MaxRiseTime,
 		  &NoisyDetFlag, outputLevel, &detailedOutput);
+  if(status  != ISDC_OK ) Abort(NewGRP, "Program aborted with status %d : could not retrieve parameters.", status);
+
+  ISGRI_efficiency_struct ISGRI_efficiency;
+  dal_element *dal_EFFC;
+
+  status=DAL3IBIS_open_EFFC(InEFFCDOL, &dal_EFFC, chatter, status);
+  status=DAL3IBIS_read_EFFC(&dal_EFFC, &ISGRI_efficiency, chatter, status);
+
   if(status  != ISDC_OK ) Abort(NewGRP, "Program aborted with status %d : could not retrieve parameters.", status);
   
   // Get the science window ID stuff    
@@ -303,6 +312,7 @@ int main(int argc, char *argv[])
 
   RILstatus= RILlogMessage(NULL,Log_1,"-------- Get REVOL Context and HK3 status --------");
 
+
   // Retrieve Pixel Revolution Status
   dal_double **LowThreshMap= NULL; 
   if((LowThreshMap=(dal_double **)calloc(ISGRI_SIZE, sizeof(dal_double *)))==NULL) 
@@ -316,8 +326,9 @@ int main(int argc, char *argv[])
   for(int i=0; i<ISGRI_SIZE; i++) 
     if((ONpixelsREVmap[i]= (dal_int*)calloc(ISGRI_SIZE, sizeof(dal_int)))==NULL) 
       Abort(NewGRP, "Error in allocating memory for  pixels on / off map.", status);
-  if((status= GetREVcontext(REVcontext, OSMattribute.revol, EndTime,
-			    LowThreshMap, ONpixelsREVmap, detailedOutput)) !=ISDC_OK )
+
+  if((status= DAL3IBIS_read_REV_context_maps(REVcontext, OSMattribute.revol, EndTime,
+			    LowThreshMap, ONpixelsREVmap, &ISGRI_efficiency, detailedOutput)) !=ISDC_OK )
     {
       RILstatus= RILlogMessage(NULL,Error_1,"Retrieving Revolution Context failed, status %d.",status);
       CommonExit(status);
@@ -336,11 +347,12 @@ int main(int argc, char *argv[])
     //CommonExit(status);
     status=ISDC_OK;
   }
-  status= EnerDriftCorr(LowThreshMap,OSMattribute.revol);
-  if(status != ISDC_OK) {
+
+  //status= EnerDriftCorr(LowThreshMap,OSMattribute.revol);
+ /* if(status != ISDC_OK) {
     RILlogMessage(NULL,Error_1,"no energy drift correction for Low Threshold Map");
     return status;
-  }
+  }*/
 
   // Free memory here for proton tables : to limit necessary memory space
   int i;
@@ -908,7 +920,7 @@ int main(int argc, char *argv[])
 				  GTIstart, GTIstop, NumGTI, GTIstartPerMCE, GTIstopPerMCE, NumGTIperMCE, 
 				  DeadTimes, OBTdeadTimes, NumDeadTimes, 
 				  ONpixelsREVmap, ONpixelsHK3map, SelectFlagMap, LowThreshMap, OSMattribute.revol,
-				  SpecNoisyMap, &NumSpecNoisy, detailedOutput)) != ISDC_OK)
+				  SpecNoisyMap, &NumSpecNoisy, detailedOutput, &ISGRI_efficiency)) != ISDC_OK)
 	{
 	  RILstatus= RILlogMessage(NULL,Error_1,"Error while extracting noisy pixels, status= %d.", status);
 	  CommonExit(status);
@@ -1019,7 +1031,7 @@ int main(int argc, char *argv[])
 	      
 	      // Compute IsgriEffSHD
 	      if((status= MkeffImage(TimeEffMap, LowThreshMap, SpecNoisyMap, 
-				     &EnergyBounds[Iteration], m, OSMattribute.revol, IsgriEffSHD, MeanEff)) != ISDC_OK)
+				     &EnergyBounds[Iteration], m, OSMattribute.revol, IsgriEffSHD, MeanEff, &ISGRI_efficiency)) != ISDC_OK)
 		{
 		  RILstatus= RILlogMessage(NULL,Error_1,"Error Filling EFFI shadowgram, status= %d.", status);
 		  CommonExit(status);

@@ -23,7 +23,7 @@ C_EXEC_1_SOURCES	= ii_shadow_build_main.cpp ii_shadow_build_read.cpp ii_shadow_b
 C_OBJECTS		= ii_shadow_build_main.o ii_shadow_build_read.o ii_shadow_build_image.o \
 			  IsgriGen/IsgriGen.o Tree/tree_mgr.o HK3stuff/HK3stuff.o
 
-C_LIBRARIES		= -ldal3ibis -ldal3hk -ldal3gen -ldal3aux -lcommon -lpil -lril -ldal -lcfitsio \
+C_LIBRARIES		= -ldal3ibis -ldal3hk -ldal3gen -ldal3aux -lISDCroot -lcommon -lpil -lril -ldal -lcfitsio \
 			  ${LAST_LIBS}
 
 ${C_EXEC}:		${C_OBJECTS}

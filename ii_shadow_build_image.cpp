@@ -29,7 +29,9 @@ int SpecNoisyPixels(dal_byte      *IsgrY,           // Table of Y coordinate of 
 		    int           revol_scw,        // Revolution number
 		    dal_double    **SpecNoisyMap,   // Output: Remaining Noisy pixels map
 		    int           *NumSpecNoisy,    // Output: Number of found noisy pixels
-		    unsigned char detailedOutput)   // Detailed output
+		    unsigned char detailedOutput,    // Detailed output
+            ISGRI_efficiency_struct *ptr_ISGRI_efficiency
+            )  
 {
   int 
     status=     ISDC_OK,
@@ -175,8 +177,10 @@ int SpecNoisyPixels(dal_byte      *IsgrY,           // Table of Y coordinate of 
   for(int y=0;y<ISGRI_SIZE;y++) 
     for(int z=0;z<ISGRI_SIZE;z++)
       if(TimeEffMap[y][z]>ZERO)
-	for(int bin=0;bin<NumBinEner;bin++) 
-	  EffMap[y][z][bin]= TimeEffMap[y][z] * LTfunction((BinEner[bin+1]+BinEner[bin])/2,LowThreshMap[y][z],revol_scw);
+	for(int bin=0;bin<NumBinEner;bin++) {
+
+	  EffMap[y][z][bin]= TimeEffMap[y][z] * LTfunction((BinEner[bin+1]+BinEner[bin])/2,y,z,ptr_ISGRI_efficiency);
+    }
   
   // ==================================================================
   //                Compute mean and pixels Spectra  
@@ -757,7 +761,8 @@ int MkeffImage(dal_double    **TimeEffMap,    // Pixels Time Efficiency map
 	       int           NumImaBin,       // Number of energy bands                                      
 	       int           revol_scw,       // Revolution number
 	       dal_double    ***IsgriEffSHD,  // Output: Image efficiency map, one per energy band                   
-	       dal_double    *MeanEff)        // Output: Means of the efficiency maps to be calculated
+	       dal_double    *MeanEff,
+           ISGRI_efficiency_struct *ptr_ISGRI_efficiency)        // Output: Means of the efficiency maps to be calculated
 {
   int
     RILstatus= ISDC_OK,
@@ -818,7 +823,7 @@ int MkeffImage(dal_double    **TimeEffMap,    // Pixels Time Efficiency map
 			E= EnergyBounds[k][0] + (i+0.5)*NewStep;
 			// Use LTshape analytical approximation + Add "ARF*power_law" 
 			tmp= ARF(E) * pow(E,-2);
-			Int+= tmp*LTfunction(E,LowThresImage[IsgrY][IsgrZ],revol_scw);
+			Int+= tmp*LTfunction(E,IsgrY,IsgrZ,ptr_ISGRI_efficiency);
 			Tot+= tmp;
 		      }
 		    if(Tot>ZERO)
@@ -840,7 +845,7 @@ int MkeffImage(dal_double    **TimeEffMap,    // Pixels Time Efficiency map
 		if( (SpecNoisyMap[IsgrY][IsgrZ]<ZERO) && (TimeEffMap[IsgrY][IsgrZ]>ZERO) )
 		  {
 		    E= (EnergyBounds[k][0]+EnergyBounds[k][1])/2;
-		    EngEffMap[IsgrY][IsgrZ]= LTfunction(E,LowThresImage[IsgrY][IsgrZ],revol_scw);
+		    EngEffMap[IsgrY][IsgrZ]= LTfunction(E,IsgrY,IsgrZ,ptr_ISGRI_efficiency);
 		  }
 		else
 		  EngEffMap[IsgrY][IsgrZ]= 0;
@@ -1097,8 +1102,20 @@ int WriteImage(dal_element   *NewGRP,        // Pointer to the Science window
 //          so as to kill them ( LTfunction=0 => Energetic_Efficiency=0 => Total_Efficiency=0 ). 
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
+
+
+double LTfunction(double energy,
+          int y,
+          int z,
+          ISGRI_efficiency_struct *ptr_ISGRI_efficiency
+		  ) {
+    double f;
+    DAL3IBIS_get_ISGRI_efficiency(energy,y,z,ptr_ISGRI_efficiency,&f,0,0);
+    return f;
+}
+
  
-double LTfunction(double Energy,
+double LTfunction_anal(double Energy,
 		  double LTkeV,
 		  int revol_scw)
 {
@@ -1165,66 +1182,6 @@ void SetImageMCEtoZero(double **Image,
     for(int j=StartZ;j<StartZ+32;j++)
       Image[i][j]= 0.;
 }
-
-/*//////////////////////////////////////////////////////////////////////////////////////////
-                               Correct energy drift
-*/
-/************************************************************************
- * FUNCTION: EnerDriftCorr
- * DESCRIPTION:
- *  Computes for a LT map expressed in kev, the corrected map by taking into account 
- *  calibration laws depending on Rise time and time (revolution number).
- *  The used calibration law is based on calibration model computed into ibis_isgr_energy V.7
- *  Returns ISDC_OK if everything is fine, else returns an error code.
- *  The temperature/IREM proton dosers were abandoned at version ibis_isgr_energy 7.0.
- * ERROR CODES:
- *  DAL error codes
- *
- * PARAMETERS:
- *  LowThreshMap dal_double** in      Low threshold map expressed in kev.
- *  Revolution number integer in      input Group
- * RETURN:            int     current status
- ************************************************************************/
-////////////////////////////////////////////////////////////////////////////////////////////
-int EnerDriftCorr(dal_double  **LowThreshMap,
-                  int         revol_scw
-		  )
-
-{
-  int status=ISDC_OK;
-  double gain_corrPH1,offset_corrPH1,g_scale,off_scale;
-  /*Final re-scaling parameters, same as in ibis_isgri_energy*/
-  double PH;
-
-  gain_corrPH1=PAR1_GAIN_corrPH1+PAR2_GAIN_corrPH1*revol_scw;
-  offset_corrPH1=PAR1_OFFSET_corrPH1;
-
-  if (revol_scw > 1300) {
-      gain_corrPH1   += pow((revol_scw-1300.)/(1600.-1300.),2.)*0.1;
-      offset_corrPH1 += pow((revol_scw-1300.)/(1600.-1300.),2.)*1.4;
-  }
-
-
-
-  g_scale=G_SCALE0+G_SCALE1*revol_scw;
-  off_scale=OFF_SCALE0;
- 
-  RILlogMessage(NULL, Log_1, "LT drift correction with ( LT(gph0,Oho) - (%f) )/( %f )",offset_corrPH1,gain_corrPH1);
-  
-  for(int y=0;y<ISGRI_SIZE;y++){ 
-    for(int z=0;z<ISGRI_SIZE;z++) {
-       // ****************** test *******************************************
-       if (LowThreshMap[y][z] > 0){
-	 /* ---- if LT=f(gain,offset)----- */
-	 PH=PAR1_GAIN_corrPH1*(G_SCALE0*LowThreshMap[y][z]+OFF_SCALE0)+PAR1_OFFSET_corrPH1;
-	 LowThreshMap[y][z]= (((PH-offset_corrPH1)/gain_corrPH1)-off_scale)/g_scale;
-       }
-    }
-  }
-
-  return status;
-}
-
 
 
 /************************************************************************

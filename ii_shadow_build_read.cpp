@@ -9,6 +9,7 @@ int GetPars(dal_element   **newGRP,          // DOL to the SCW group
             dal_element   **idxREVcontext,   // DOL to the index of REVOLUTION contexts
             dal_element   **idxHK3maps,      // DOL to the index of HK3 noisy maps
             char          *InGTIName,        // Name of the GTIs to be used
+            char          *InEFFCDOL,       // DOL of the EFFC structure
             dal_float     ***EnergyBounds,   // Energy binning                
             int           *NumImaBin,        // Number of energy channels                     
             dal_double    *TimeLen,          // Time bin length  
@@ -18,7 +19,7 @@ int GetPars(dal_element   **newGRP,          // DOL to the SCW group
 	    int           *NoisyDetFlag,     // Spectral Noisy Pixels Detection Flag
             char          *outputLevel,      // OutputLevel for shadow build                  
             unsigned char *detailedOutput   // Detailed Output   
-	    )      
+	    )
 
 {
   int   
@@ -178,6 +179,24 @@ int GetPars(dal_element   **newGRP,          // DOL to the SCW group
 	  RILstatus=RILlogMessage(NULL, Warning_1, "Please check the parameter file.");
 	  return status;
 	}
+    }
+  
+  InEFFCDOL[0]='\0';
+  strcpy(parName, "inEFFC");
+  if((status=PILGetString(parName, InEFFCDOL))!=ISDC_OK)
+    {
+      if(status==PIL_NOT_FOUND) 
+	{
+	  RILstatus=RILlogMessage(NULL, Warning_1, "Parameter <<InEFFCDOL>> not listed.");
+	  RILstatus=RILlogMessage(NULL, Warning_1, 
+				  "This parameter is mandatory must be a valid file or NULL.");
+	  RILstatus=RILlogMessage(NULL, Warning_1, "Please check the parameter file.");
+	  return status;
+	}
+    }
+    else
+    {
+        RILstatus=RILlogMessage(NULL, Log_1, "DOL for the ISGR-EFFC-MOD",InEFFCDOL);
     }
   
   // PARAMETER "User-defined Row Filter"

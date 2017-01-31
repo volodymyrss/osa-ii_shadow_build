@@ -8,6 +8,11 @@
 #include "dal3hk.h"
 #include "dal3ibis.h"
 
+extern "C"
+{
+    #include "dal3ibis_calib.h"
+}
+
 // Program includes
 #include "ii_shadow_build_types.h"
 #include "HK3stuff/HK3stuff.h"
@@ -20,6 +25,7 @@ int GetPars(dal_element   **newGRP,          // DOL to the SCW group
             dal_element   **idxREVcontext,   // DOL to the index of REVOLUTION contexts
             dal_element   **idxHK3maps,      // DOL to the index of HK3 noisy maps
             char          *InGTIName,        // Name of the GTIs to be used
+            char          *InEFFCDOL,        // Name of the GTIs to be used
             dal_float     ***EnergyBounds,   // Energy binning                
             int           *NumImaBin,        // Number of energy channels                     
             dal_double    *TimeLen,          // Time bin length  
@@ -122,7 +128,9 @@ int SpecNoisyPixels(dal_byte      *IsgrY,           // Table of Y coordinate of 
 		    int           revol_scw,        // Revolution number
 		    dal_double    **SpecNoisyMap,   // Output: Remaining Noisy pixels map
 		    int           *NumSpecNoisy,    // Output: Number of found noisy pixels
-		    unsigned char detailedOutput);  // Detailed output
+		    unsigned char detailedOutput, // Detailed output
+            ISGRI_efficiency_struct *ptr_ISGRI_efficiency
+            ); 
 
 int ComputeTimeEffMap(OBTime        OBTstart,         // Time Bin starting time
 		      OBTime        OBTend,           // Time Bin finishing time 
@@ -160,7 +168,9 @@ int MkeffImage(dal_double    **TimeEffMap,    // Pixels Time Efficiency map
 	       int           NumImaBin,       // Number of energy bands                                      
 	       int           revol_scw,       // Revolution number
 	       dal_double    ***IsgriEffSHD,  // Output: Image efficiency map, one per energy band                   
-	       dal_double    *MeanEff);       // Output: Means of the efficiency maps to be calculated
+	       dal_double    *MeanEff,        // Output: Means of the efficiency maps to be calculated
+           ISGRI_efficiency_struct *ptr_ISGRI_efficiency);
+
 
 int WriteImage(dal_element   *NewGRP,        // Pointer to the Science window                           
 	       dal_element   **image,        // Pointer to the object in which image is written         
@@ -182,7 +192,12 @@ int WriteImage(dal_element   *NewGRP,        // Pointer to the Science window
 void SetImageMCEtoZero(double **Image, 
 		       int    MCEid);
 
-double LTfunction(double Energy,
+double LTfunction(double energy,
+		  int y,
+		  int z,
+		  ISGRI_efficiency_struct *ptr_ISGRI_efficiency);
+
+double LTfunction_anal(double Energy,
 		  double LTkeV,
 		  int revol_scw);
 
