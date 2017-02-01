@@ -19,6 +19,7 @@
  *   PL, 1.9     02/04/2012  modify PAR1_..._corrPH1 parameters to correct <50 keV behavior
  *   CF  2.0                 SPR 05084 implemented with Paris agreement for OSA 10.1
  *   CF  2.!     05/11/2015  SCREW 2624 implemented with Paris agreement for OSA 10.2
+ *   CF  2.2     09/12/2016  SCREW XXXX Piotr Lubinski's patch for high rates
  *************************************************************************/
 
 #include "ii_shadow_build.h"

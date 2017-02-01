@@ -562,6 +562,24 @@ int ComputeTimeEffMap(OBTime        OBTstart,         // Time Bin starting time
 
   long Nmod=0, NumDTmod;
   dal_double tmp;
+  dal_double det;
+  OBTime OBTdead1;
+  OBTime OBTdead2;
+  OBTime OBTdif;
+  OBTime OBTround;
+  /* 4s period in OBT units */
+  dal_double de4s= 4194300.616;
+  dal_double delti;
+  dal_double sumti;
+  dal_double sumco;
+  dal_double sumtime;
+  dal_double wedefactor;
+  dal_double wedeco;
+  int ireset;
+  int iseconds;
+  int ifracsec;
+  
+  wedeco = 0.;
   for(int mce=0;mce<IBIS_NUM_BLOCK;mce++) 
     {
       // Compute ModOnTime
@@ -579,14 +597,107 @@ int ComputeTimeEffMap(OBTime        OBTstart,         // Time Bin starting time
 
       // Compute ModDTfactor and DEADC  
       NumDTmod= 0;
-      for(long dt=0;dt<NumDeadTimes;dt++)	      
-	for(long i=0;i<NumMCEGTI[mce];i++) 
+      sumco = 0.;
+      sumtime = 0.;
+      wedefactor = 0.;
+      for(long dt=0;dt<NumDeadTimes;dt++) {
+
+     // Dead time bin limits
+        OBTdead1 = OBTdeadTimes[dt]-de4s;
+        OBTdead2 = OBTdeadTimes[dt]+de4s;		
+
+        sumti = 0.;
+
+	for(long i=0;i<NumMCEGTI[mce];i++) {
+
+       // Dead time limit within GTI (normal situation)
+	  if( (OBTdead1 > MCEGTIstart[mce][i]) && (OBTdead2 < MCEGTIstop[mce][i]) )
+	    { 
+            sumti = sumti + 8.0;
+            if ((mce == 0) && (dt > 59 && dt < 70)) 
+              { 
+              RILstatus= RILlogMessage(NULL, Log_1, "dt= %ld, OBTdeadTimes= %lld, OBTdead1= %lld, OBTdead2= %lld", 
+                           dt,i,OBTdeadTimes[dt],OBTdead1,OBTdead2); 
+              RILstatus= RILlogMessage(NULL, Log_1, "i= %ld, MCEGTIstart= %lld, MCEGTIstop= %lld", 
+                           i,MCEGTIstart[mce][i],MCEGTIstop[mce][i]); 
+	      RILstatus= RILlogMessage(NULL, Log_1, "sumti= %.4f", sumti); 
+              }				 
+            }
+
+       // GTI within the dead time limit
+	  if( (OBTdead2 >= MCEGTIstart[mce][i]) && (OBTdead1 <= MCEGTIstop[mce][i]) )
+	    { 
+
+            iseconds = 0;
+            ifracsec = 0;
+
+       // Entire GTI within the dead time limit
+            if( (OBTdead1 <= MCEGTIstart[mce][i]) && (OBTdead2 >= MCEGTIstop[mce][i]) )
+              {
+              status = DAL3GENroundOBT(MCEGTIstop[mce][i]-MCEGTIstart[mce][i], 0.0001, &OBTround, status);		  
+	      status = DAL3GENsplitOBT(OBTround,&ireset,&iseconds,&ifracsec,status);
+              }
+              
+       // GTI on the lower border
+            if( (OBTdead1 > MCEGTIstart[mce][i]) && (OBTdead2 >= MCEGTIstop[mce][i]) )
+              {
+              status = DAL3GENroundOBT(MCEGTIstop[mce][i]-OBTdead1, 0.0001, &OBTround, status);		  
+	      status = DAL3GENsplitOBT(OBTround,&ireset,&iseconds,&ifracsec,status);
+              }        
+              
+       // GTI on the upper border
+            if( (OBTdead1 <= MCEGTIstart[mce][i]) && (OBTdead2 < MCEGTIstop[mce][i]) )
+              {
+              status = DAL3GENroundOBT(OBTdead2-MCEGTIstart[mce][i], 0.0001, &OBTround, status);		  
+	      status = DAL3GENsplitOBT(OBTround,&ireset,&iseconds,&ifracsec,status);
+              }        
+              
+            delti = iseconds + 4.0*ifracsec/de4s;
+            sumti = sumti + delti;
+          
+       // Print control sequence
+            if ((mce == 0) && (dt > 59 && dt < 70)) 
+              { 
+              RILstatus= RILlogMessage(NULL, Log_1, "dt= %ld, OBTdeadTimes= %lld, OBTdead1= %lld, OBTdead2= %lld", 
+                           dt,i,OBTdeadTimes[dt],OBTdead1,OBTdead2); 
+              RILstatus= RILlogMessage(NULL, Log_1, "i= %ld, MCEGTIstart= %lld, MCEGTIstop= %lld", 
+                           i,MCEGTIstart[mce][i],MCEGTIstop[mce][i]); 
+	      RILstatus= RILlogMessage(NULL, Log_1, "OBTround= %lld, iseconds= %d, ifracsec= %d", 
+	  		 OBTround,iseconds,ifracsec); 
+	      RILstatus= RILlogMessage(NULL, Log_1, "delti= %.4f, sumti= %.4f", delti, sumti); 
+              }				 
+	    }
+
+       // Standard method
 	  if( (OBTdeadTimes[dt]>=MCEGTIstart[mce][i]) && (OBTdeadTimes[dt]<=MCEGTIstop[mce][i]) )
 	    {
 	      NumDTmod++;
 	      ModDTfactor[mce]+= DeadTimes[dt][mce];
 	      break;
 	    }
+	    
+       // End of GTI loop   
+	  }
+
+     // Summed correction for a given dead time interval
+        sumtime = sumtime + sumti;
+        sumco = sumco + sumti*DeadTimes[dt][mce];
+
+     // End of dead time loop
+	}   
+
+   // Weighted dead time correction for a given module
+      if (sumtime > 0.0001)
+        {
+        wedefactor = 1.-sumco/sumtime;
+        wedeco = wedeco + wedefactor;
+        }   
+      
+   // Print the result    	
+      RILstatus= RILlogMessage(NULL, Log_1, "MCE%d, sumco= %.4f, sumtime= %.4f, wedefactor= %.4f, wedeco= %.3f", 
+				 mce,sumco,sumtime,wedefactor,wedeco); 
+
+   // Standard method	
       if(NumDTmod)
 	{
 	  ModDTfactor[mce]= 1.-ModDTfactor[mce]/NumDTmod;
@@ -595,14 +706,22 @@ int ComputeTimeEffMap(OBTime        OBTstart,         // Time Bin starting time
 	}
 
       // Info
-      if(detailedOutput)
-	RILstatus= RILlogMessage(NULL, Log_1, "MCE%d: OnTime= %.3fsec, DTfactor= %.3f%c", 
-				 mce,ModOnTime[mce],100*ModDTfactor[mce],'%'); 
+    //  if(detailedOutput)
+	RILstatus= RILlogMessage(NULL, Log_1, "MCE%d: OnTime= %.3fsec, NumDTmod= %d, DTfactor= %.3f%c", 
+				 mce,ModOnTime[mce],NumDTmod,100*ModDTfactor[mce],'%'); 
+				 
+   // Replace standard method with the weighted mean
+      if (sumtime > 0.) {
+        ModDTfactor[mce] = wedefactor;
+      }
+
+ // End of MCE loop				 
     }
   
   // Compute keyword DEADC for this TimeBin
   if(Nmod)
-    *DeadC/= Nmod;
+//    *DeadC/= Nmod;
+    *DeadC= wedeco/Nmod;
   else
     {
       *DeadC=1.;
