@@ -183,6 +183,8 @@ AUTHOR
    chazalse@discovery.saclay.cea.fr
    Christophe Couvreur, SAp-CEA/Saclay
    ccouvreu@cea.fr
+
+   Volodymyr Savchenko ISDC/Unige + former APC/Paris
 SEE ALSO
 
    ibis_osm_isgr
