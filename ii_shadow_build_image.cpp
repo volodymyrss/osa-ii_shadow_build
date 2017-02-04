@@ -49,7 +49,6 @@ int SpecNoisyPixels(dal_byte      *IsgrY,           // Table of Y coordinate of 
     ***SpecPix=    NULL,
     criteria= 2;
 
-
   // ==================================================================
   //                   Allocate generic modules arrays 
   // ==================================================================
@@ -893,6 +892,7 @@ int MkeffImage(dal_double    **TimeEffMap,    // Pixels Time Efficiency map
   dal_double 
     **EngEffMap= NULL;
 
+
   // ==================================================================
   //                    Allocate generic  EffEng map
   // ==================================================================
@@ -1230,6 +1230,9 @@ double LTfunction(double energy,
 		  ) {
     double f;
     DAL3IBIS_get_ISGRI_efficiency(energy,y,z,ptr_ISGRI_efficiency,&f,0,0);
+
+    //printf("y: %i z: %i energy %.5lg =>  %.5lg\n",y,z,energy,f);
+
     return f;
 }
 

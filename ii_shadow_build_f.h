@@ -11,6 +11,7 @@
 extern "C"
 {
     #include "dal3ibis_calib.h"
+    #include "dal3ibis_calib_aux.h"
 }
 
 // Program includes

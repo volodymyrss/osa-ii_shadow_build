@@ -91,9 +91,11 @@ int main(int argc, char *argv[])
 
   ISGRI_efficiency_struct ISGRI_efficiency;
   dal_element *dal_EFFC;
+  ISGRI_efficiency.LT_approximation=10.;
 
-  status=DAL3IBIS_open_EFFC(InEFFCDOL, &dal_EFFC, chatter, status);
-  status=DAL3IBIS_read_EFFC(&dal_EFFC, &ISGRI_efficiency, chatter, status);
+  //status=DAL3IBIS_open_EFFC(InEFFCDOL, &dal_EFFC, chatter, status);
+  //status=DAL3IBIS_read_EFFC(&dal_EFFC, &ISGRI_efficiency, chatter, status);
+
 
   if(status  != ISDC_OK ) Abort(NewGRP, "Program aborted with status %d : could not retrieve parameters.", status);
   
@@ -247,8 +249,9 @@ int main(int argc, char *argv[])
   OBTime
     OBTStart= StartTime,
     OBTEnd= EndTime;
-  if(detailedOutput)
-    {
+
+  //if(detailedOutput)
+  //  {
       if((status= DAL3AUXconvertOBT2IJD(NewGRP, TCOR_ANY, 1, &StartTime, &JulianStart, status))!=ISDC_OK) 
 	{
 	  RILstatus= RILlogMessage(NULL, Log_1,"main : Error in converting OBT times to ISDC Julian days, status = %d.", status);
@@ -262,7 +265,19 @@ int main(int argc, char *argv[])
 	}
       RILstatus= RILlogMessage(NULL,Log_1,"The full SCW (OBTimes)= [ %llu, %llu ].", OBTStart, OBTEnd);
       RILstatus= RILlogMessage(NULL,Log_1,"    (ISDC Julian days)= [ %f, %f ]", JulianStart, JulianEnd);
-    }
+
+      if(status=DAL3IBIS_populate_EFFC_flexible_IJD(InEFFCDOL, JulianStart, JulianEnd, &ISGRI_efficiency, DS_ISGR_EFFC, chatter,status)!=ISDC_OK) {
+          RILstatus= RILlogMessage(NULL, Log_1, 
+                      "unable to find EFFC, status = %d.", status);
+          report_try_error(status,status,"ERROR",__FILE__,__LINE__);
+          
+          CommonExit(status);
+
+      }; // move
+
+
+
+ //   }
 
   if((status= DAL3AUXconvertOBT2IJD(NewGRP, TCOR_ANY, 1, &StartTime, &OSMattribute.tstart, status))!=ISDC_OK) 
     {
@@ -915,6 +930,7 @@ int main(int argc, char *argv[])
   // We here use a fitting algorithm based on pixels'spectra over the whole SCW 	   
   if(NoisyDetFlag)
     {
+
       RILstatus= RILlogMessage(NULL,Log_1,"-------- Find Remaining NOISY PIXELS --------");
       int NumSpecNoisy= 0;
       if((status= SpecNoisyPixels(IsgriY, IsgriZ, IsgriEnergy, NumEvents, StartTime, EndTime,
