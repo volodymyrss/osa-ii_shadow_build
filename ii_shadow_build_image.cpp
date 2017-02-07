@@ -1229,9 +1229,14 @@ double LTfunction(double energy,
           ISGRI_efficiency_struct *ptr_ISGRI_efficiency
 		  ) {
     double f;
-    DAL3IBIS_get_ISGRI_efficiency(energy,y,z,ptr_ISGRI_efficiency,&f,0,0);
+    int chatter=0;
 
-    //printf("y: %i z: %i energy %.5lg =>  %.5lg\n",y,z,energy,f);
+    if (y==10 && z==10) chatter=10;
+
+    DAL3IBIS_get_ISGRI_efficiency(energy,y,z,ptr_ISGRI_efficiency,&f,chatter,0);
+
+    if (chatter>9)
+        printf("%.5lg\n",f);
 
     return f;
 }

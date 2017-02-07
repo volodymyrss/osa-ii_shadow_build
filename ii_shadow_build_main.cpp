@@ -56,7 +56,10 @@ int main(int argc, char *argv[])
 
   //switchOn time variables
   //double my_switchOnTime;     /* ijd of switch on time */
-  int chatter=4;
+  int chatter=8;
+
+
+  C256_setup_E_bands(chatter);
 
   //hk1 variables
   dal_element *isgrHK1_Ptr = NULL;
@@ -91,7 +94,7 @@ int main(int argc, char *argv[])
 
   ISGRI_efficiency_struct ISGRI_efficiency;
   dal_element *dal_EFFC;
-  ISGRI_efficiency.LT_approximation=10.;
+  ISGRI_efficiency.LT_approximation=1e-3;
 
   //status=DAL3IBIS_open_EFFC(InEFFCDOL, &dal_EFFC, chatter, status);
   //status=DAL3IBIS_read_EFFC(&dal_EFFC, &ISGRI_efficiency, chatter, status);
@@ -542,6 +545,7 @@ int main(int argc, char *argv[])
     *ChannelMax=      NULL; 
   OBTime 
     *IsgriTime=       NULL;
+
   
   // Apply User-defined Filtering
   //sprintf(RowFilter,"RISE_TIME>=%d && RISE_TIME<=%d",MinRiseTime,MaxRiseTime);//selection on raw risetime

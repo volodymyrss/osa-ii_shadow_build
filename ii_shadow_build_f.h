@@ -6,12 +6,13 @@
 #include "dal3gen.h"
 #include "dal3aux.h"
 #include "dal3hk.h"
-#include "dal3ibis.h"
 
 extern "C"
 {
+    #include "dal3ibis.h"
     #include "dal3ibis_calib.h"
     #include "dal3ibis_calib_aux.h"
+    #include "dal3ibis_calib_ebands.h"
 }
 
 // Program includes
