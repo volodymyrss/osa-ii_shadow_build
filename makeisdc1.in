@@ -8,7 +8,7 @@
 
 # this file is included from Makefile(.in)
 
-TAR_FILE_NAME		= ii_shadow_build-2.2
+TAR_FILE_NAME		= {{component_name}}-{{component_version}}
 
 EXTERNAL_PACKAGES	= 
 
