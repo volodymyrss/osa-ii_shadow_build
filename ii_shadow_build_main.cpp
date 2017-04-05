@@ -1,7 +1,7 @@
 /************************************************************************
  * FILE:        ii_shadow_build_main.cpp
- * VERSION:     1.14.12
- * COMPONENT:   ii_shadow_build
+ * VERSION:     {{component_version}}
+ * COMPONENT:   {{component_name}}
  * AUTHOR:      Christophe. Couvreur,     SAp-CEA,  ccouvreu@cea.fr
  * DESCRIPTION: component subroutine source code
  * HISTORY:
