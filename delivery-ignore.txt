@@ -1,4 +1,5 @@
 delivery-ignore.txt
+ci-actions.txt
 depends_on.txt
 component.yaml
 README.md
