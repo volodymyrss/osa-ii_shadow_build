@@ -3,8 +3,10 @@
 
 #include "ii_shadow_build_f.h"
 
+
 #define COMPONENT_NAME           "ii_shadow_build"
 #define COMPONENT_VERSION        "1.15"
+
 
 
 #endif
