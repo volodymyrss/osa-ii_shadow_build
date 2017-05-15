@@ -8,7 +8,7 @@
 
 # this file is included from Makefile(.in)
 
-TAR_FILE_NAME		= ii_shadow_build-1.15
+TAR_FILE_NAME		= ii_shadow_build-1.15-f701267d-dirty-dal3ibis-6.0-716c3308
 
 EXTERNAL_PACKAGES	= 
 
