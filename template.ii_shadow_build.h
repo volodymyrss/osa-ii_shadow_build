@@ -7,8 +7,6 @@
 #define COMPONENT_NAME           "{{component_name}}"
 #define COMPONENT_VERSION        "{{component_version}}"
 {% else %}
-#include "git_version.h"
-#
 #ifndef GIT_VERSION
 #define GIT_VERSION ""
 #endif
