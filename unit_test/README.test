@@ -1,0 +1,180 @@
+#! /bin/csh -f
+# -----------------------------------------------------------------------------
+#                         INTEGRAL SCIENCE DATA CENTRE
+#
+# File:      unit_test/README.test
+# Component: ii_shadow_build
+# Authors:   Severin Chazalmartin
+# Purpose:   Script to test functionality of component ii_shadow_build
+# Invoke:    make test
+#
+# Revision History:
+# 17 March 2005 Severin Chazalmartin   0.8.8
+#   - Update repository structure to OSA4.2's
+# 28 July 2004  Severin Chazalmartin   0.8.7
+#   - add possibility to work with former test_data files
+#   - cosmetic changes
+# 5 April 2004  Severin Chazalmartin   0.8.6
+#   - cosmetic changes
+# 06 April 2007 Christope Couvreur
+#   - 1 directory "test data", 1 directory "out"
+#   - test data and outref file must be compressed files.
+# 05 March 2009 Nicolas Produit
+# regenerate outref
+# -----------------------------------------------------------------------------
+
+#==============================================================================
+# 0. Preparation to run tests: Set global variables
+#==============================================================================
+
+set VER="1.9"
+set VERSION_LIST=$VER
+
+setenv PFILES .\;..:$ISDC_ENV/pfiles
+setenv AUXL_REF_DIR $ISDC_ENV/share
+set LOGFILE="test-$VER.log"
+setenv COMMONLOGFILE +$LOGFILE
+if (-r ii_shadow_build.par) then
+  \rm *.par
+endif
+
+echo "README_TEST:" 
+echo "README_TEST: Script will test ii_shadow_build-$VER on test_data: $VERSION_LIST"
+echo "README_TEST: PFILES are set to $PFILES"
+echo "README_TEST: Clock reset data is put in $AUXL_REF_DIR"
+echo "README_TEST:" 
+
+#==============================================================================
+# 1. Preparation to run tests: Create global directories
+#==============================================================================
+
+# --------------------------------
+# Reset out/ directory
+# --------------------------------
+if (-d out) then
+  echo "README_TEST: Removing old global outputs (out/)"
+  \rm -rf out
+endif
+echo "README_TEST: Creating global directory out/"
+mkdir out
+
+#goto skipOutref
+# --------------------------------
+# Reset outref/* directories
+# --------------------------------
+if (-d outref) then
+  echo "README_TEST: Removing old global reference outputs (outref/)"
+  \rm -rf outref
+endif
+set OUTREF_FILE="ii_shadow_build-"$VER"_outref.tar.gz"
+echo "README_TEST: Creating global directory outref/"
+if (-r ./$OUTREF_FILE) then
+    echo "README_TEST: Using local $OUTREF_FILE for comparisons"
+    gunzip -c ./$OUTREF_FILE | tar xf -
+else if (-r $ISDC_TEST_DATA_DIR/$OUTREF_FILE) then
+    echo "README_TEST: Decompressing $OUTREF_FILE from $ISDC_TEST_DATA_DIR for comparisons"
+    gunzip -c $ISDC_TEST_DATA_DIR/$OUTREF_FILE | tar xf -
+else
+    echo "README_TEST: Error: Could not find reference outputs..."
+    echo "README_TEST: Please check the proper setting of env. variables below:"
+    echo "README_TEST: ISDC_TEST_DATA_DIR = $ISDC_TEST_DATA_DIR"
+    echo "README_TEST: OUTREF_FILE        = $OUTREF_FILE"
+    echo "README_TEST: Aborting."
+    exit
+endif
+
+
+#==============================================================================
+# 2. Loop on each test_data of the list
+#==============================================================================
+
+foreach VER ($VERSION_LIST)
+    echo "README_TEST: -------------------------------------------------------"     
+    echo "README_TEST:"
+
+    # --------------------------
+    # Define files and variable
+    # --------------------------
+    #echo "README_TEST: Preparing test on data of VERSION $VER"
+    #set TEST_DATA_FILE="ii_shadow_build-"$VER"_test_data.tar.gz"
+    set TEST_DATA_FILE="ii_shadow_build-1.4.12_test_data.tar.gz"
+    #set OUT="out-"$VER
+
+    #Skip following block if use a permanent decompressed test_data directory
+    #goto skipTar
+    # ---------------------------
+    # Create DATA directory
+    # ---------------------------
+    if (-d test_data) then
+	echo "README_TEST: Removing old data test_data/"
+	\rm -rf test_data
+    endif
+    echo "README_TEST: Creating special directory test_data/"
+    if (-r ./$TEST_DATA_FILE) then
+	echo "README_TEST: Retrieving data from $TEST_DATA_FILE"
+	gunzip -c ./$TEST_DATA_FILE | tar xf -
+    else if (-r $ISDC_TEST_DATA_DIR/$TEST_DATA_FILE) then
+	echo "README_TEST: Decompressing data from $ISDC_TEST_DATA_DIR/$TEST_DATA_FILE"
+	gunzip -c $ISDC_TEST_DATA_DIR/$TEST_DATA_FILE | tar xf -
+    else
+	echo "README_TEST: Could not find test data..."
+	echo "README_TEST: Please check the proper setting of env. variables below:"
+	echo "README_TEST: ISDC_TEST_DATA_DIR = $ISDC_TEST_DATA_DIR"
+	echo "README_TEST: TEST_DATA_FILE     = $TEST_DATA_FILE"
+	echo "README_TEST: Aborting."
+	exit
+    endif
+
+    # --------------------------
+    # Launch functional testing
+    # --------------------------
+    echo "README_TEST:"
+    echo "README_TEST: Launching test $VER :"
+    echo "README_TEST:"
+    #set WrkDir=out/$OUT/test_data
+    set myDir = "out"
+
+    ../ii_shadow_build  \
+	    details="YES" \
+	    inSWGGRP="test_data/swg2_ibis.fits[1]" \
+	    inRawEvts="" \
+	    inPrwEvts="" \
+	    inSrwEvts="" \
+	    inPrpEvts="" \
+	    inCorEvts="" \
+	    inDead="" \
+	    inGTI="" \
+	    inNoisList="" \
+	    idxLowThre="test_data/isgri_context_index.fits.gz[1]" \
+	    idxNoisy="test_data/isgri_prp_noise_index.fits.gz[1]" \
+	    inEnergyValues="" \
+	    outSWGGRP="" \
+	    outRawShadow="$myDir/isgri_raw_shad.fits(ISGR-DETE-SHD-IDX.tpl)" \
+	    outEffShadow="$myDir/isgri_eff_shad.fits(ISGR-EFFI-SHD-IDX.tpl)" \
+	    gti_name="MERGED_ISGRI" \
+	    isgri_e_num=3 \
+	    isgri_e_min="16 20 40" \
+	    isgri_e_max="20 40 60" \
+	    isgri_min_rise=16 \
+	    isgri_max_rise=116 \
+	    isgri_row_filter="" \
+	    NoisyDetFlag=1 \
+	    isgri_t_len=100000 \
+	    outputLevel="BIN_I" \
+	    #switDOL="test_data/ibis_swit_cal_0002.fits[1]"
+    # -----------------------------------
+    # Retain only essential files in out
+    # -----------------------------------
+    echo "README_TEST:"
+    #echo "README_TEST: In out/$OUT : retaining only LOGfile + SCW group + Output Shadowgrams"
+    \mv $LOGFILE  $myDir/
+    
+end
+
+#==============================================================================
+# 3. EXIT
+#==============================================================================
+  echo "README_TEST: ---------------------------------------------------------" 
+  echo "README_TEST:"
+  echo "README_TEST: Work complete."
+  echo "README_TEST:"
