@@ -268,23 +268,23 @@ int SpecNoisyPixels(dal_byte      *IsgrY,           // Table of Y coordinate of 
 	StdDev+= DistChi2[m] * pow(BinChi2[m]-Mean,2);
       StdDev= sqrt(StdDev/Tot);
     }
-
+	
   // ==================================================================
   //                     Determine Noisy pixels
   // ==================================================================
   double NoisyThresh= Mean+criteria*StdDev;
-  if(Mean<NoisyThresh)
+  if(Mean<NoisyThresh-ZERO)
     {
       if(detailedOutput)
-	RILlogMessage(NULL,Log_1,"=> Mean= %.3f, Sigma= %.3f",Mean,StdDev);
+          RILlogMessage(NULL,Log_1,"=> Mean= %.5lg, Sigma= %.5lg, Total= %.5lg",Mean,StdDev,Tot);
       int N=0;
       for(int y=0;y<ISGRI_SIZE;y++)
-	for(int z=0;z<ISGRI_SIZE;z++)
-	  if(Chi2Map[y][z]>NoisyThresh) 
-	    {
-	      SpecNoisyMap[y][z]= (Chi2Map[y][z]-Mean)/StdDev;
-	      N++;
-	    }
+          for(int z=0;z<ISGRI_SIZE;z++)
+              if(Chi2Map[y][z]>NoisyThresh) 
+              {
+                  SpecNoisyMap[y][z]= (Chi2Map[y][z]-Mean)/StdDev;
+                  N++;
+              }
       *NumSpecNoisy= N;
     }
   else
@@ -1229,7 +1229,7 @@ double LTfunction(double energy,
           ISGRI_efficiency_struct *ptr_ISGRI_efficiency
 		  ) {
     double f;
-    int chatter=0;
+    int chatter=5;
 
     if (y==10 && z==10) chatter=10;
 
